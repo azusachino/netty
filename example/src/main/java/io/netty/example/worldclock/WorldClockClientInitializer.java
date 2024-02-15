@@ -22,6 +22,8 @@ import io.netty.handler.codec.protobuf.ProtobufDecoder;
 import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 
 public class WorldClockClientInitializer extends ChannelInitializer<SocketChannel> {
@@ -38,6 +40,8 @@ public class WorldClockClientInitializer extends ChannelInitializer<SocketChanne
         if (sslCtx != null) {
             p.addLast(sslCtx.newHandler(ch.alloc(), WorldClockClient.HOST, WorldClockClient.PORT));
         }
+
+        p.addFirst(new LoggingHandler(LogLevel.INFO));
 
         p.addLast(new ProtobufVarint32FrameDecoder());
         p.addLast(new ProtobufDecoder(WorldClockProtocol.LocalTimes.getDefaultInstance()));

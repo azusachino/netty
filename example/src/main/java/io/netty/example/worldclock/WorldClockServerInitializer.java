@@ -15,6 +15,8 @@
  */
 package io.netty.example.worldclock;
 
+import java.util.concurrent.TimeUnit;
+
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -23,6 +25,7 @@ import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import io.netty.handler.ssl.SslContext;
+import io.netty.handler.timeout.IdleStateHandler;
 
 public class WorldClockServerInitializer extends ChannelInitializer<SocketChannel> {
 
@@ -38,6 +41,10 @@ public class WorldClockServerInitializer extends ChannelInitializer<SocketChanne
         if (sslCtx != null) {
             p.addLast(sslCtx.newHandler(ch.alloc()));
         }
+
+        // trigger timeout, and deal with it
+        p.addLast(new IdleStateHandler(true, 3, 5, 5, TimeUnit.SECONDS));
+        p.addLast(new AutoCloseIdleChannelHandler());
 
         p.addLast(new ProtobufVarint32FrameDecoder());
         p.addLast(new ProtobufDecoder(WorldClockProtocol.Locations.getDefaultInstance()));

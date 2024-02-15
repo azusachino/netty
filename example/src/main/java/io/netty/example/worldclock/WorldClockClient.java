@@ -58,7 +58,8 @@ public final class WorldClockClient {
             List<String> response = handler.getLocalTimes(CITIES);
 
             // Close the connection.
-            ch.close();
+            // ch.close();
+            Thread.sleep(10000);
 
             // Print the response at last but not least.
             for (int i = 0; i < CITIES.size(); i ++) {
