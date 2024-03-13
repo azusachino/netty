@@ -94,8 +94,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.crypto.SecretKey;
@@ -285,7 +283,7 @@ public abstract class SSLEngineTest {
         return params;
     }
 
-    private ExecutorService delegatingExecutor;
+    private DelayingExecutor delegatingExecutor;
 
     protected ByteBuffer allocateBuffer(BufferType type, int len) {
         switch (type) {
@@ -470,7 +468,7 @@ public abstract class SSLEngineTest {
         MockitoAnnotations.initMocks(this);
         serverLatch = new CountDownLatch(1);
         clientLatch = new CountDownLatch(1);
-        delegatingExecutor = Executors.newCachedThreadPool();
+        delegatingExecutor = new DelayingExecutor();
     }
 
     @AfterEach
@@ -4442,8 +4440,79 @@ public abstract class SSLEngineTest {
             serverEngine = wrapEngine(serverSslCtx.newEngine(UnpooledByteBufAllocator.DEFAULT));
 
             handshake(param.type(), param.delegate(), clientEngine, serverEngine);
+            fail();
         } catch (SSLHandshakeException expected) {
             // Expected
+        } finally {
+            cleanupClientSslEngine(clientEngine);
+            cleanupServerSslEngine(serverEngine);
+        }
+    }
+
+    @Test
+    public void testTLSv13DisabledIfNoValidCipherSuiteConfigured() throws Exception {
+        // Use a TLSv12 cipher
+        List<String> ciphers = Collections.singletonList("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256");
+        SelfSignedCertificate ssc = new SelfSignedCertificate();
+        clientSslCtx = wrapContext(null, SslContextBuilder.forClient()
+                .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                .sslProvider(sslClientProvider())
+                .sslContextProvider(clientSslContextProvider())
+                .ciphers(ciphers)
+                .build());
+        serverSslCtx = wrapContext(null, SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey())
+                .sslProvider(sslServerProvider())
+                .sslContextProvider(serverSslContextProvider())
+                .ciphers(ciphers)
+                .build());
+        SSLEngine clientEngine = null;
+        SSLEngine serverEngine = null;
+        try {
+            clientEngine = wrapEngine(clientSslCtx.newEngine(UnpooledByteBufAllocator.DEFAULT));
+            serverEngine = wrapEngine(serverSslCtx.newEngine(UnpooledByteBufAllocator.DEFAULT));
+
+            // Doesn't matter what kind of buffertype is used for this test.
+            handshake(BufferType.Direct, false, clientEngine, serverEngine);
+
+            assertEquals(SslProtocols.TLS_v1_2, clientEngine.getSession().getProtocol());
+            assertEquals(SslProtocols.TLS_v1_2, serverEngine.getSession().getProtocol());
+        } finally {
+            cleanupClientSslEngine(clientEngine);
+            cleanupServerSslEngine(serverEngine);
+        }
+    }
+
+    @Test
+    public void testTLSv13EnabledIfNoCipherSuiteConfigured() throws Exception {
+        SslProvider clientProvider = sslClientProvider();
+        SslProvider serverProvider = sslServerProvider();
+        if (!SslProvider.isTlsv13Supported(clientProvider) || !SslProvider.isTlsv13Supported(serverProvider)) {
+            // TLSv1.3 is not supported by either client or server.
+            return;
+        }
+        SelfSignedCertificate ssc = new SelfSignedCertificate();
+        clientSslCtx = wrapContext(null, SslContextBuilder.forClient()
+                .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                .sslProvider(sslClientProvider())
+                .sslContextProvider(clientSslContextProvider())
+                .protocols(SslProtocols.TLS_v1_3)
+                .build());
+        serverSslCtx = wrapContext(null, SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey())
+                .sslProvider(sslServerProvider())
+                .sslContextProvider(serverSslContextProvider())
+                .protocols(SslProtocols.TLS_v1_3)
+                .build());
+        SSLEngine clientEngine = null;
+        SSLEngine serverEngine = null;
+        try {
+            clientEngine = wrapEngine(clientSslCtx.newEngine(UnpooledByteBufAllocator.DEFAULT));
+            serverEngine = wrapEngine(serverSslCtx.newEngine(UnpooledByteBufAllocator.DEFAULT));
+
+            // Doesn't matter what kind of buffertype is used for this test.
+            handshake(BufferType.Direct, false, clientEngine, serverEngine);
+
+            assertEquals(SslProtocols.TLS_v1_3, clientEngine.getSession().getProtocol());
+            assertEquals(SslProtocols.TLS_v1_3, serverEngine.getSession().getProtocol());
         } finally {
             cleanupClientSslEngine(clientEngine);
             cleanupServerSslEngine(serverEngine);

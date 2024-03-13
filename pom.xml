@@ -527,6 +527,14 @@
       </properties>
     </profile>
     <profile>
+      <id>boringssl-snapshot</id>
+      <properties>
+        <tcnative.artifactId>netty-tcnative-boringssl-static</tcnative.artifactId>
+        <tcnative.version>2.0.66.Final-SNAPSHOT</tcnative.version>
+        <tcnative.classifier>${os.detected.classifier}</tcnative.classifier>
+      </properties>
+    </profile>
+    <profile>
       <id>leak</id>
       <properties>
         <argLine.leak>-Dio.netty.leakDetectionLevel=paranoid -Dio.netty.leakDetection.targetRecords=32</argLine.leak>
@@ -647,7 +655,7 @@
     <os.detection.classifierWithLikes>fedora,suse,arch</os.detection.classifierWithLikes>
     <tcnative.artifactId>netty-tcnative</tcnative.artifactId>
     <!-- Keep in sync with bom/pom.xml -->
-    <tcnative.version>2.0.61.Final</tcnative.version>
+    <tcnative.version>2.0.65.Final</tcnative.version>
     <tcnative.classifier>${os.detected.classifier}</tcnative.classifier>
     <conscrypt.groupId>org.conscrypt</conscrypt.groupId>
     <conscrypt.artifactId>conscrypt-openjdk-uber</conscrypt.artifactId>
@@ -872,7 +880,7 @@
       <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.5.0-2</version>
+        <version>1.5.5-11</version>
         <optional>true</optional>
       </dependency>
       <dependency>
@@ -1094,7 +1102,7 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.21</version>
+        <version>1.26.0</version>
         <scope>test</scope>
       </dependency>
 
